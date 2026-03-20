@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Awadev - Adaptador de Currículo IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        /* ═══════════════════════════════════════════
+           VARIÁVEIS & RESET
+        ═══════════════════════════════════════════ */
+        :root {
+            --bg: #0d0f14;
+            --surface: #151820;
+            --surface2: #1c2030;
+            --border: #252a3a;
+            --accent: #4f7cff;
+            --accent2: #7c4fff;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --text: #e8eaf0;
+            --muted: #7a80a0;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px 16px 80px;
+        }
+        /* ═══════════════════════════════════════════
+           HEADER
+        ═══════════════════════════════════════════ */
+        .header {
+            max-width: 1060px;
+            margin: 0 auto 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo span { -webkit-text-fill-color: var(--muted); font-weight: 400; }
+        .btn-config {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-config:hover { border-color: var(--accent); color: var(--text); }
+        .btn-config svg { width: 15px; height: 15px; }
+        /* ═══════════════════════════════════════════
+           CONFIG PANEL
+        ═══════════════════════════════════════════ */
+        .config-panel {
+            max-width: 1060px;
+            margin: 0 auto 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: none;
+        }
+        .config-panel h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            margin-bottom: 16px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .tutorial-box {
+            background: var(--surface2);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+        .tutorial-box ol { padding-left: 18px; margin-top: 6px; }
+        .tutorial-box a { color: var(--accent); text-decoration: none; }
+        .tutorial-box a:hover { text-decoration: underline; }
+        .input-row { display: flex; gap: 10px; align-items: center; }
+        .input-row input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-row input:focus { border-color: var(--accent); }
+        /* ═══════════════════════════════════════════
+           PROGRESS BAR
+        ═══════════════════════════════════════════ */
+        .progress-wrapper {
+            max-width: 1060px;
+            margin: 0 auto 32px;
+        }
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+        .step-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 18px; left: 50%;
+            width: 100%; height: 2px;
+            background: var(--border);
+            z-index: 0;
+            transition: background 0.4s;
+        }
+        .step-item.completed:not(:last-child)::after {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+        }
+        .step-dot {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700; font-size: 13px;
+            color: var(--muted);
+            position: relative; z-index: 1;
+            transition: all 0.4s;
+        }
+        .step-item.active .step-dot {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-color: transparent; color: white;
+            box-shadow: 0 0 20px rgba(79,124,255,0.4);
+        }
+        .step-item.completed .step-dot {
+            background: var(--green);
+            border-color: transparent; color: white;
+        }
+        .step-label {
+            font-size: 11px; color: var(--muted);
+            margin-top: 6px; text-align: center;
+            font-weight: 500; transition: color 0.3s;
+        }
+        .step-item.active .step-label { color: var(--accent); }
+        .step-item.completed .step-label { color: var(--green); }
+        .progress-bar-track {
+            height: 4px; background: var(--surface2);
+            border-radius: 4px; overflow: hidden; margin-top: 4px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+        /* ═══════════════════════════════════════════
+           WORKSPACE
+        ═══════════════════════════════════════════ */
+        .workspace {
+            max-width: 1060px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 780px) { .workspace { grid-template-columns: 1fr; } }
+        /* ═══════════════════════════════════════════
+           CARDS
+        ═══════════════════════════════════════════ */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            display: none;
+            animation: fadeUp 0.4s ease forwards;
+            margin-bottom: 16px;
+        }
+        .card.active { display: block; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .card-header {
+            display: flex; align-items: center;
+            gap: 12px; margin-bottom: 20px;
+        }
+        .step-badge {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; font-family: 'Syne', sans-serif;
+            font-weight: 700; font-size: 12px;
+            padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
+        }
+        .card h2 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+        .card p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+        /* ═══════════════════════════════════════════
+           FOTO UPLOAD
+        ═══════════════════════════════════════════ */
+        .photo-row {
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 18px; padding: 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border); border-radius: 10px;
+        }
+        .photo-preview {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; flex-shrink: 0;
+        }
+        /* foto sem distorção: cover + center */
+        .photo-preview img {
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center top;
+            display: block;
+        }
+        .photo-info { flex: 1; }
+        .photo-info .field-label { margin-bottom: 6px; }
+        .photo-btn-label {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--muted); padding: 7px 12px; border-radius: 7px;
+            cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+        .photo-btn-label:hover { border-color: var(--accent); color: var(--text); }
+        /* ═══════════════════════════════════════════
+           UPLOAD ZONE
+        ═══════════════════════════════════════════ */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px; text-align: center;
+            cursor: pointer; transition: all 0.3s; position: relative;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(79,124,255,0.05);
+        }
+        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .upload-zone p { margin: 0; font-size: 14px; }
+        .upload-zone .hint { font-size: 12px; margin-top: 4px; color: var(--muted); }
+        /* ═══════════════════════════════════════════
+           INPUTS / TEXTAREA
+        ═══════════════════════════════════════════ */
+        textarea, input[type="text"] {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 14px; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px; outline: none;
+            resize: vertical; transition: border-color 0.2s; line-height: 1.6;
+        }
+        textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+        .field-group { margin-bottom: 16px; }
+        .field-label {
+            font-size: 12px; font-weight: 500; color: var(--muted);
+            margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: block;
+        }
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            color: var(--muted); font-size: 12px; margin: 16px 0;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        /* ═══════════════════════════════════════════
+           BUTTONS
+        ═══════════════════════════════════════════ */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; border: none; padding: 12px 24px; border-radius: 10px;
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+            font-size: 15px; font-weight: 500; transition: all 0.2s;
+            width: 100%; margin-top: 10px;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,124,255,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-secondary {
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); box-shadow: none;
+        }
+        .btn-secondary:hover { border-color: var(--accent); box-shadow: none; opacity: 1; transform: none; }
+        .btn-success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .btn-success:hover { box-shadow: 0 8px 24px rgba(46,204,113,0.3); }
+        /* ═══════════════════════════════════════════
+           STATUS
+        ═══════════════════════════════════════════ */
+        .status {
+            margin-top: 12px; font-size: 13px; font-weight: 500;
+            display: flex; align-items: center; gap: 8px; min-height: 20px;
+        }
+        .status.ok      { color: var(--green); }
+        .status.err     { color: var(--red); }
+        .status.loading { color: var(--accent); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(79,124,255,0.3);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite; flex-shrink: 0;
+        }
+        /* ═══════════════════════════════════════════
+           FILE BADGE
+        ═══════════════════════════════════════════ */
+        .file-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 12px;
+            font-size: 13px; color: var(--text); margin-top: 10px; width: 100%;
+        }
+        .file-badge .remove {
+            cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; margin-left: auto;
+        }
+        .file-badge .remove:hover { color: var(--red); }
+        /* ═══════════════════════════════════════════
+           RESULT ACTIONS
+        ═══════════════════════════════════════════ */
+        .result-actions {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+        }
+        .result-actions .btn { margin-top: 0; }
+        /* ═══════════════════════════════════════════
+           PREVIEW COLUNA DIREITA
+        ═══════════════════════════════════════════ */
+        .preview-col { position: sticky; top: 20px; }
+        .preview-label {
+            font-size: 11px; font-weight: 500; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+        }
+        .preview-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        /* ═══════════════════════════════════════════
+           TEMPLATE CV — usa Montserrat
+        ═══════════════════════════════════════════ */
+        .cv-shell {
+            background: #fff;
+            width: 100%; aspect-ratio: 210 / 297;
+            border-radius: 8px; overflow: hidden;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+            display: grid; grid-template-columns: 38% 62%;
+            font-family: 'Montserrat', sans-serif;
+            color: #1a1a2e;
+        }
+        /* ── Sidebar esquerda ── */
+        .cv-left {
+            background: #1e2336; color: #e0e4f0;
+            padding: clamp(14px, 3vw, 28px) clamp(10px, 2vw, 18px);
+            display: flex; flex-direction: column;
+            gap: clamp(8px, 1.5vw, 15px);
+        }
+        /* FOTO: círculo perfeito, sem distorção */
+        .cv-photo-wrap { display: flex; justify-content: center; }
+        .cv-photo {
+            width: clamp(52px, 10vw, 84px);
+            height: clamp(52px, 10vw, 84px);
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.18);
+            overflow: hidden;
+            background: #2d334f;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(22px, 4vw, 34px);
+            flex-shrink: 0;
+        }
+        .cv-photo img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+        }
+        .cv-name-block { text-align: center; }
+        .cv-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: clamp(9px, 1.75vw, 15px);
+            letter-spacing: 0.5px; line-height: 1.25; color: #fff;
+        }
+        .cv-role {
+            font-size: clamp(6px, 1.05vw, 8.5px);
+            color: #8b93b8; text-transform: uppercase;
+            letter-spacing: 1.5px; margin-top: 3px;
+        }
+        .cv-section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(6px, 1.05vw, 8.5px);
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.8px; color: #6b7fbf;
+            border-bottom: 1px solid #2d3558;
+            padding-bottom: 3px; margin-bottom: clamp(4px, 0.8vw, 8px);
+        }
+        /* Contato — sem emoji, usa SVG inline */
+        .cv-contact-item {
+            display: flex; align-items: flex-start; gap: 6px;
+            font-size: clamp(5.5px, 1vw, 8px);
+            color: #b0b8d8; margin-bottom: 4px; line-height: 1.45;
+            word-break: break-all;
+        }
+        .cv-contact-icon {
+            flex-shrink: 0; width: clamp(7px, 1.2vw, 10px);
+            height: clamp(7px, 1.2vw, 10px); margin-top: 1px;
+            fill: #6b7fbf;
+        }
+        .cv-edu-item { margin-bottom: clamp(4px, 0.8vw, 9px); }
+        .cv-edu-inst {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(5.5px, 1vw, 8px); font-weight: 700;
+            color: #d4d9f0; line-height: 1.3;
+        }
+        .cv-edu-course { font-size: clamp(5px, 0.9vw, 7px); color: #8b93b8; margin-top: 1px; }
+        .cv-edu-period { font-size: clamp(4.5px, 0.85vw, 6.5px); color: #5d6585; margin-top: 1px; }
+        /* Habilidades — 3 blocos */
+        .cv-skill-item {
+            display: flex; align-items: center;
+            gap: clamp(3px, 0.6vw, 5px); margin-bottom: clamp(4px, 0.8vw, 7px);
+        }
+        .cv-skill-name {
+            font-size: clamp(5px, 0.95vw, 7.5px);
+            color: #c8cee8; flex: 1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .cv-skill-dots {
+            display: flex; gap: clamp(2px, 0.4vw, 3px); flex-shrink: 0;
+        }
+        .cv-skill-dot {
+            width: clamp(5px, 1vw, 9px);
+            height: clamp(5px, 1vw, 9px);
+            border-radius: 2px;
+            background: #2d3558;
+            transition: background 0.5s;
+        }
+        .cv-skill-dot.filled { background: linear-gradient(135deg, #4e7bff, #7c4fff); }
+        .cv-skill-dot.partial { background: linear-gradient(135deg, #4e7bff44, #7c4fff44); }
+        .cv-lang-item {
+            display: flex; justify-content: space-between;
+            font-size: clamp(5px, 0.9vw, 7.5px); color: #b0b8d8; margin-bottom: 3px;
+        }
+        .cv-lang-level { color: #5d6585; }
+        /* ── Área principal direita ── */
+        .cv-right {
+            background: #fff;
+            padding: clamp(14px, 3vw, 26px) clamp(12px, 2.5vw, 20px);
+            display: flex; flex-direction: column;
+            gap: clamp(8px, 1.5vw, 13px); overflow: hidden;
+        }
+        .cv-main-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(6px, 1.05vw, 8.5px); font-weight: 700;
+            text-transform: uppercase; letter-spacing: 2px;
+            color: #4e7bff; border-bottom: 1.5px solid #e8ecff;
+            padding-bottom: 3px; margin-bottom: clamp(5px, 1vw, 9px);
+        }
+        .cv-objetivo-text {
+            font-size: clamp(5.5px, 1vw, 8px); color: #444; line-height: 1.7;
+        }
+        .cv-exp-item { margin-bottom: clamp(5px, 1vw, 9px); }
+        .cv-exp-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 4px;
+        }
+        .cv-exp-co {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(6px, 1.05vw, 8.5px); font-weight: 700; color: #1a1a2e;
+        }
+        .cv-exp-period {
+            font-size: clamp(5px, 0.85vw, 7px); color: #9099b8;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .cv-exp-role {
+            font-size: clamp(5.5px, 0.95vw, 7.5px); color: #4e7bff; font-weight: 600; margin-top: 1px;
+        }
+        .cv-exp-desc {
+            font-size: clamp(5px, 0.9vw, 7px); color: #555; margin-top: 3px; line-height: 1.65;
+        }
+        .cv-exp-desc ul { padding-left: 10px; margin-top: 2px; }
+        .cv-exp-desc li { margin-bottom: 1px; }
+    </style>
+</head>
+<body>
+<!-- ══════════ HEADER ══════════ -->
+<div class="header">
+    <div class="logo">Awadev <span>/ CV IA</span></div>
+    <button class="btn-config" onclick="toggleConfig()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        API
+    </button>
+</div>
+<!-- ══════════ CONFIG PANEL ══════════ -->
+<div class="config-panel" id="configPanel">
+    <h3>Configuração da API</h3>
+    <div class="tutorial-box">
+        <strong>Como conseguir sua chave gratuita:</strong>
+        <ol>
+            <li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</li>
+            <li>Faça login com sua conta Google.</li>
+            <li>Clique em <strong>"Create API key"</strong> e copie o código.</li>
+            <li>Cole no campo abaixo e salve.</li>
+        </ol>
+        <div style="margin-top:8px;font-size:12px;color:#5a607a;">
+            🔒 Sua chave fica salva apenas no seu navegador local.
+        </div>
+    </div>
+    <div class="input-row">
+        <input type="password" id="apiKeyInput" placeholder="Sua API Key do Gemini...">
+        <button class="btn" style="width:auto;margin-top:0;" onclick="salvarApiKey()">Salvar</button>
+    </div>
+    <div class="status" id="statusKey"></div>
+</div>
+<!-- ══════════ PROGRESS BAR ══════════ -->
+<div class="progress-wrapper">
+    <div class="progress-steps">
+        <div class="step-item active" id="si-0">
+            <div class="step-dot">1</div>
+            <div class="step-label">Currículo</div>
+        </div>
+        <div class="step-item" id="si-1">
+            <div class="step-dot">2</div>
+            <div class="step-label">Vaga</div>
+        </div>
+        <div class="step-item" id="si-2">
+            <div class="step-dot">3</div>
+            <div class="step-label">Resultado</div>
+        </div>
+    </div>
+    <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+</div>
+<!-- ══════════ WORKSPACE ══════════ -->
+<div class="workspace">
+    <!-- ── BUILDER ── -->
+    <div class="builder-col">
+        <!-- STEP 1 -->
+        <div class="card active" id="card-0">
+            <div class="card-header">
+                <span class="step-badge">PASSO 1</span>
+                <h2>Suba seu Currículo</h2>
+            </div>
+            <p>Envie PDF ou TXT. A IA estrutura tudo e popula o template ao lado automaticamente.</p>
+            <!-- Foto -->
+            <div class="photo-row">
+                <div class="photo-preview" id="photoPreview">&#128247;</div>
+                <div class="photo-info">
+                    <label class="field-label">Foto de perfil (opcional)</label>
+                    <label class="photo-btn-label">
+                        &#128248; Selecionar imagem
+                        <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="onPhotoSelected(this)">
+                    </label>
+                </div>
+            </div>
+            <!-- CV upload -->
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="cvInput" accept=".pdf,.txt" onchange="onFileSelected(this)">
+                <div class="upload-icon">&#128196;</div>
+                <p><strong>Clique para selecionar</strong> ou arraste aqui</p>
+                <p class="hint">Formatos aceitos: PDF, TXT</p>
+            </div>
+            <div id="fileBadge" style="display:none;" class="file-badge">
+                <span>&#128206;</span>
+                <span id="fileName">arquivo.pdf</span>
+                <span class="remove" onclick="removeFile()">&#10005;</span>
+            </div>
+            <button class="btn" onclick="processarCurriculo()">&#10022; Estruturar Currículo</button>
+            <div class="status" id="statusCv"></div>
+        </div>
+        <!-- STEP 2 -->
+        <div class="card" id="card-1">
+            <div class="card-header">
+                <span class="step-badge">PASSO 2</span>
+                <h2>Informe a Vaga</h2>
+            </div>
+            <p>Cole o link da vaga para busca automática, ou insira a descrição manualmente.</p>
+            <div class="field-group">
+                <label class="field-label">Link da vaga (opcional)</label>
+                <div style="display:flex;gap:10px;">
+                    <input type="text" id="vagaUrl" placeholder="https://linkedin.com/jobs/view/...">
+                    <button class="btn btn-secondary" style="width:auto;margin-top:0;white-space:nowrap;" onclick="buscarVagaPorLink()">Buscar</button>
+                </div>
+            </div>
+            <div class="divider">ou cole manualmente</div>
+            <div class="field-group">
+                <label class="field-label">Descricao da vaga</label>
+                <textarea id="descVaga" rows="8" placeholder="Cole os requisitos, responsabilidades e diferenciais da vaga..."></textarea>
+            </div>
+            <button class="btn" onclick="gerarCurriculoFinal()">&#10022; Gerar Currículo Adaptado</button>
+            <div class="status" id="statusVaga"></div>
+        </div>
+        <!-- STEP 3 -->
+        <div class="card" id="card-2">
+            <div class="card-header">
+                <span class="step-badge">PASSO 3</span>
+                <h2>Currículo Pronto!</h2>
+            </div>
+            <p>Seu currículo foi adaptado e populado no template. O PDF gerado é <strong>selecionável</strong> para compatibilidade com sistemas ATS (Gupy, etc.).</p>
+            <div class="result-actions">
+                <button class="btn btn-secondary" onclick="reiniciar()">&#8629; Nova vaga</button>
+                <button class="btn btn-success" onclick="baixarPDF()">&#8659; Baixar PDF</button>
+            </div>
+            <div class="status" id="statusPdf"></div>
+        </div>
+    </div><!-- /builder-col -->
+    <!-- ── PREVIEW ── -->
+    <div class="preview-col">
+        <div class="preview-label">Pré-visualização do template</div>
+        <div class="cv-shell" id="cvTemplate">
+            <!-- SIDEBAR -->
+            <div class="cv-left">
+                <div class="cv-photo-wrap">
+                    <div class="cv-photo" id="tplPhoto">&#128100;</div>
+                </div>
+                <div class="cv-name-block">
+                    <div class="cv-name" id="tplNome">NOME E SOBRENOME</div>
+                    <div class="cv-role" id="tplCargo">NOME DO CARGO</div>
+                </div>
+                <div>
+                    <div class="cv-section-title">Contato</div>
+                    <div id="tplContato">
+                        <div class="cv-contact-item">
+                            <svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span>Cidade / Estado</span>
+                        </div>
+                        <div class="cv-contact-item">
+                            <svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            <span>(00) 00000-0000</span>
+                        </div>
+                        <div class="cv-contact-item">
+                            <svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <span>email@email.com</span>
+                        </div>
+                        <div class="cv-contact-item">
+                            <svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M16 8A6 6 0 0 1 16 20H8A6 6 0 0 1 8 8h8zM8 0h8a8 8 0 0 1 0 16H8A8 8 0 0 1 8 0zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm3 2.5h5v1h-5v-1zm0 2h5v1h-5v-1zM8 13a5 5 0 0 0-4.9 4H12.9A5 5 0 0 0 8 13z"/></svg>
+                            <span>/seu-perfil</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="cv-section-title">Educação</div>
+                    <div id="tplEdu">
+                        <div class="cv-edu-item">
+                            <div class="cv-edu-inst">Nome da Instituição</div>
+                            <div class="cv-edu-course">Nome do Curso</div>
+                            <div class="cv-edu-period">2020 – 2024</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="cv-section-title">Habilidades</div>
+                    <div id="tplSkills">
+                        <div class="cv-skill-item">
+                            <span class="cv-skill-name">—</span>
+                            <div class="cv-skill-dots">
+                                <div class="cv-skill-dot"></div>
+                                <div class="cv-skill-dot"></div>
+                                <div class="cv-skill-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="cv-section-title">Idiomas</div>
+                    <div id="tplIdiomas">
+                        <div class="cv-lang-item"><span>—</span><span class="cv-lang-level">—</span></div>
+                    </div>
+                </div>
+            </div><!-- /cv-left -->
+            <!-- ÁREA PRINCIPAL -->
+            <div class="cv-right">
+                <div>
+                    <div class="cv-main-title">Objetivo</div>
+                    <div class="cv-objetivo-text" id="tplObjetivo">
+                        Meu objetivo é trazer uma nova visão à empresa para que se mantenha à frente das inovações, a mesma forma que me realizarei em trabalhar em uma corporação com valores semelhantes aos meus.
+                    </div>
+                </div>
+                <div>
+                    <div class="cv-main-title">Experiência Profissional</div>
+                    <div id="tplExp">
+                        <div class="cv-exp-item">
+                            <div class="cv-exp-top">
+                                <div>
+                                    <div class="cv-exp-co">Nome da Empresa</div>
+                                    <div class="cv-exp-role">Nome do Cargo</div>
+                                </div>
+                                <div class="cv-exp-period">2020 – 2022</div>
+                            </div>
+                            <div class="cv-exp-desc">Descrição das responsabilidades e realizações nesta posição.</div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /cv-right -->
+        </div><!-- /cv-shell -->
+    </div><!-- /preview-col -->
+</div><!-- /workspace -->
+<script>
+    /* ═══════════════════════════════════════════
+       SETUP
+    ═══════════════════════════════════════════ */
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    let currentStep  = 0;
+    const STEPS      = 3;
+    let cvJsonSalvo  = null;
+    let photoDataUrl = null;
+    window.onload = function () {
+        const key = localStorage.getItem('geminiApiKey');
+        if (key) document.getElementById('apiKeyInput').value = key;
+        else document.getElementById('configPanel').style.display = 'block';
+        setStep(0);
+    };
+    /* ═══════════════════════════════════════════
+       CONFIG
+    ═══════════════════════════════════════════ */
+    function toggleConfig() {
+        const p = document.getElementById('configPanel');
+        p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
+    }
+    function salvarApiKey() {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        if (!key) return;
+        localStorage.setItem('geminiApiKey', key);
+        setStatus('statusKey', 'ok', '✓ Chave salva!');
+        setTimeout(() => setStatus('statusKey', '', ''), 3000);
+    }
+    /* ═══════════════════════════════════════════
+       PROGRESS
+    ═══════════════════════════════════════════ */
+    function setStep(n) {
+        currentStep = n;
+        document.getElementById('progressFill').style.width = [0, 50, 100][n] + '%';
+        for (let i = 0; i < STEPS; i++) {
+            const si = document.getElementById('si-' + i);
+            si.classList.remove('active', 'completed');
+            if (i < n) si.classList.add('completed');
+            else if (i === n) si.classList.add('active');
+            document.getElementById('card-' + i).classList.toggle('active', i <= n);
+        }
+    }
+    /* ═══════════════════════════════════════════
+       STATUS HELPER
+    ═══════════════════════════════════════════ */
+    function setStatus(id, type, msg, showSpinner = false) {
+        const el = document.getElementById(id);
+        el.className = 'status ' + type;
+        el.innerHTML = (showSpinner ? '<div class="spinner"></div>' : '') + msg;
+    }
+    /* ═══════════════════════════════════════════
+       FOTO — cover + center top (sem distorção)
+    ═══════════════════════════════════════════ */
+    function onPhotoSelected(input) {
+        if (!input.files.length) return;
+        const r = new FileReader();
+        r.onload = e => {
+            photoDataUrl = e.target.result;
+            const imgTag = `<img src="${photoDataUrl}" alt="foto" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;">`;
+            document.getElementById('photoPreview').innerHTML = imgTag;
+            document.getElementById('tplPhoto').innerHTML     = imgTag;
+        };
+        r.readAsDataURL(input.files[0]);
+    }
+    /* ═══════════════════════════════════════════
+       FILE HANDLING
+    ═══════════════════════════════════════════ */
+    function onFileSelected(input) {
+        if (!input.files.length) return;
+        document.getElementById('fileName').textContent = input.files[0].name;
+        document.getElementById('fileBadge').style.display = 'flex';
+    }
+    function removeFile() {
+        document.getElementById('cvInput').value = '';
+        document.getElementById('fileBadge').style.display = 'none';
+    }
+    async function extractTextFromPDF(file) {
+        const ab  = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+        let text  = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page    = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(s => s.str).join(' ') + '\n';
+        }
+        return text;
+    }
+    /* ═══════════════════════════════════════════
+       GEMINI API
+    ═══════════════════════════════════════════ */
+    async function chamarGemini(prompt) {
+        const apiKey = localStorage.getItem('geminiApiKey');
+        if (!apiKey) {
+            alert('Configure sua API Key primeiro!');
+            document.getElementById('configPanel').style.display = 'block';
+            return null;
+        }
+        const url     = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const payload = { contents: [{ parts: [{ text: prompt }] }] };
+        try {
+            const res  = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.error) { alert(`Erro ${data.error.code}: ${data.error.message}`); return null; }
+            if (data.candidates?.[0]?.content) return data.candidates[0].content.parts[0].text;
+            return null;
+        } catch (e) {
+            console.error(e); alert('Erro de conexão. Verifique o console.'); return null;
+        }
+    }
+    /* ═══════════════════════════════════════════
+       PROMPT BASE (reutilizado nos 2 passos)
+    ═══════════════════════════════════════════ */
+    const SKILL_RULES = `
+REGRAS CRÍTICAS para "habilidades":
+- Retorne no máximo 7 habilidades — escolha as mais relevantes e representativas da carreira do candidato
+- "nivel" é um inteiro de 0 a 100. Use a escala: 90-100 especialista, 75-89 avançado, 55-74 intermediário, 35-54 básico, 10-34 iniciante
+- Os valores de "nivel" DEVEM ser todos diferentes entre si — NUNCA repita o mesmo número
+- Ordene as habilidades do maior "nivel" para o menor`;
+    /* ═══════════════════════════════════════════
+       STEP 1: Processar currículo
+    ═══════════════════════════════════════════ */
+    async function processarCurriculo() {
+        const fileInput = document.getElementById('cvInput');
+        if (!fileInput.files.length) return alert('Selecione um arquivo PDF ou TXT!');
+        const file = fileInput.files[0];
+        setStatus('statusCv', 'loading', 'Lendo o arquivo...', true);
+        let textoCV = '';
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+            try { textoCV = await extractTextFromPDF(file); }
+            catch (e) { setStatus('statusCv', 'err', '❌ Erro ao ler o PDF.'); return; }
+        } else {
+            textoCV = await file.text();
+        }
+        if (!textoCV.trim()) { setStatus('statusCv', 'err', '❌ Sem texto extraído.'); return; }
+        setStatus('statusCv', 'loading', 'A IA está estruturando seu currículo...', true);
+        const prompt = `Você é um especialista em RH. Analise o currículo e retorne SOMENTE um JSON válido (sem markdown, sem blocos de código, sem texto extra) com esta estrutura exata:
+{
+  "nome": "",
+  "cargo_atual": "",
+  "contato": { "localizacao": "", "telefone": "", "email": "", "linkedin": "" },
+  "objetivo": "",
+  "experiencia": [ { "empresa": "", "cargo": "", "periodo": "", "descricao": "" } ],
+  "formacao": [ { "instituicao": "", "curso": "", "periodo": "" } ],
+  "habilidades": [ { "nome": "", "nivel": 0 } ],
+  "idiomas": [ { "idioma": "", "nivel": "" } ]
+}
+${SKILL_RULES}
+Não invente dados — use apenas o que está no currículo.
+CURRÍCULO:
+${textoCV}`;
+        const resultado = await chamarGemini(prompt);
+        if (!resultado) { setStatus('statusCv', 'err', '❌ Erro ao processar. Tente novamente.'); return; }
+        try {
+            const clean = resultado.replace(/```json|```/gi, '').trim();
+            cvJsonSalvo = JSON.parse(clean);
+            localStorage.setItem('meuCvJson', JSON.stringify(cvJsonSalvo));
+            popularTemplate(cvJsonSalvo);
+            setStatus('statusCv', 'ok', '✅ Currículo estruturado! Template atualizado.');
+            setTimeout(() => setStep(1), 700);
+        } catch (e) {
+            console.error('JSON parse error:', e, resultado);
+            setStatus('statusCv', 'err', '❌ Erro ao interpretar resposta da IA. Tente novamente.');
+        }
+    }
+    /* ═══════════════════════════════════════════
+       STEP 2: Buscar vaga por link
+    ═══════════════════════════════════════════ */
+    async function buscarVagaPorLink() {
+        const url = document.getElementById('vagaUrl').value.trim();
+        if (!url) return alert('Cole um link de vaga primeiro!');
+        setStatus('statusVaga', 'loading', 'Buscando informações da vaga...', true);
+        const prompt = `Acesse a URL abaixo e extraia APENAS o conteúdo relevante da descrição da vaga: título, empresa, requisitos, responsabilidades e diferenciais. Responda somente com o texto da vaga, sem comentários adicionais.\nURL: ${url}`;
+        const resultado = await chamarGemini(prompt);
+        if (resultado) {
+            document.getElementById('descVaga').value = resultado;
+            setStatus('statusVaga', 'ok', '✅ Descrição carregada!');
+        } else {
+            setStatus('statusVaga', 'err', '❌ Não foi possível buscar. Cole manualmente.');
+        }
+    }
+    /* ═══════════════════════════════════════════
+       STEP 2: Gerar currículo adaptado
+    ═══════════════════════════════════════════ */
+    async function gerarCurriculoFinal() {
+        const descVaga = document.getElementById('descVaga').value.trim();
+        if (!descVaga) return alert('Insira a descrição da vaga!');
+        if (!cvJsonSalvo) return alert('Volte ao passo 1 e processe seu currículo primeiro!');
+        setStatus('statusVaga', 'loading', 'Adaptando seu currículo para a vaga...', true);
+        const prompt = `Você é um especialista em RH e currículos tech.
+CURRÍCULO BASE (JSON):
+${JSON.stringify(cvJsonSalvo, null, 2)}
+DESCRIÇÃO DA VAGA:
+${descVaga}
+TAREFA: Adapte o currículo para esta vaga. Retorne SOMENTE um JSON válido (sem markdown, sem texto extra) com EXATAMENTE esta estrutura:
+{
+  "nome": "",
+  "cargo_atual": "",
+  "contato": { "localizacao": "", "telefone": "", "email": "", "linkedin": "" },
+  "objetivo": "",
+  "experiencia": [ { "empresa": "", "cargo": "", "periodo": "", "descricao": "" } ],
+  "formacao": [ { "instituicao": "", "curso": "", "periodo": "" } ],
+  "habilidades": [ { "nome": "", "nivel": 0 } ],
+  "idiomas": [ { "idioma": "", "nivel": "" } ]
+}
+REGRAS OBRIGATÓRIAS:
+- Reescreva o objetivo personalizado para a vaga
+- Use palavras-chave da descrição da vaga nas experiências
+- Ordene experiências por relevância para a vaga
+- NÃO invente dados — apenas reorganize e enfatize o que já existe
+- Priorize nas habilidades as que a vaga exige e que o candidato realmente possui
+${SKILL_RULES}`;
+        const resultado = await chamarGemini(prompt);
+        if (!resultado) { setStatus('statusVaga', 'err', '❌ Erro ao gerar. Tente novamente.'); return; }
+        try {
+            const clean = resultado.replace(/```json|```/gi, '').trim();
+            cvJsonSalvo = JSON.parse(clean);
+            popularTemplate(cvJsonSalvo);
+            setStatus('statusVaga', 'ok', '✅ Currículo adaptado! Template atualizado.');
+            setTimeout(() => setStep(2), 700);
+        } catch (e) {
+            console.error('JSON parse error:', e, resultado);
+            setStatus('statusVaga', 'err', '❌ Erro ao interpretar resposta da IA. Tente novamente.');
+        }
+    }
+    /* ═══════════════════════════════════════════
+       HELPERS TEMPLATE
+    ═══════════════════════════════════════════ */
+    function esc(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    function formatDesc(s) {
+        const str   = String(s || '');
+        const lines = str.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length > 1) {
+            const items = lines.map(l => l.replace(/^[-*•]\s*/, ''));
+            return '<ul>' + items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>';
+        }
+        return esc(str);
+    }
+    /* Converte nível 0-100 → 3 blocos (cheio / meio / vazio) */
+    function nivelParaDots(lvl) {
+        const frac = lvl / 100;
+        return [0, 1, 2].map(i => {
+            const threshold = (i + 1) / 3;
+            const lower     = i / 3;
+            if (frac >= threshold) return 'filled';
+            if (frac > lower)      return 'partial';
+            return '';
+        });
+    }
+    /* SVGs de contato sem emoji */
+    const contactIcons = {
+        loc:  `<svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+        tel:  `<svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>`,
+        mail: `<svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
+        link: `<svg class="cv-contact-icon" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>`,
+    };
+    /* ═══════════════════════════════════════════
+       POPULAR TEMPLATE
+    ═══════════════════════════════════════════ */
+    function popularTemplate(d) {
+        // Foto
+        if (photoDataUrl) {
+            const imgTag = `<img src="${photoDataUrl}" alt="foto" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;">`;
+            document.getElementById('tplPhoto').innerHTML = imgTag;
+        }
+        // Nome e cargo
+        document.getElementById('tplNome').textContent = (d.nome || 'NOME E SOBRENOME').toUpperCase();
+        document.getElementById('tplCargo').textContent = (d.cargo_atual || 'NOME DO CARGO').toUpperCase();
+        // Contato — SVG, sem emoji
+        const c = d.contato || {};
+        const cList = [
+            { icon: contactIcons.loc,  val: c.localizacao },
+            { icon: contactIcons.tel,  val: c.telefone },
+            { icon: contactIcons.mail, val: c.email },
+            { icon: contactIcons.link, val: c.linkedin },
+        ].filter(x => x.val);
+        document.getElementById('tplContato').innerHTML = cList.length
+            ? cList.map(x => `<div class="cv-contact-item">${x.icon}<span>${esc(x.val)}</span></div>`).join('')
+            : '<div class="cv-contact-item" style="color:#5d6585">—</div>';
+        // Formação
+        const edu = d.formacao || [];
+        document.getElementById('tplEdu').innerHTML = edu.length
+            ? edu.map(e => `
+                <div class="cv-edu-item">
+                    <div class="cv-edu-inst">${esc(e.instituicao)}</div>
+                    <div class="cv-edu-course">${esc(e.curso)}</div>
+                    <div class="cv-edu-period">${esc(e.periodo)}</div>
+                </div>`).join('')
+            : '<div class="cv-edu-item" style="color:#5d6585;font-size:8px">—</div>';
+        // Habilidades — máx 7, 3 blocos
+        const sk = (d.habilidades || []).slice(0, 7);
+        document.getElementById('tplSkills').innerHTML = sk.length
+            ? sk.map(s => {
+                const lvl  = Math.min(100, Math.max(0, Number(s.nivel) || 50));
+                const dots = nivelParaDots(lvl);
+                return `
+                <div class="cv-skill-item">
+                    <span class="cv-skill-name">${esc(s.nome)}</span>
+                    <div class="cv-skill-dots">
+                        ${dots.map(cls => `<div class="cv-skill-dot ${cls}"></div>`).join('')}
+                    </div>
+                </div>`;
+            }).join('')
+            : '<div style="color:#5d6585;font-size:8px">—</div>';
+        // Idiomas
+        const ids = d.idiomas || [];
+        document.getElementById('tplIdiomas').innerHTML = ids.length
+            ? ids.map(l => `
+                <div class="cv-lang-item">
+                    <span>${esc(l.idioma)}</span>
+                    <span class="cv-lang-level">${esc(l.nivel)}</span>
+                </div>`).join('')
+            : '<div style="color:#5d6585;font-size:8px">—</div>';
+        // Objetivo
+        document.getElementById('tplObjetivo').textContent = d.objetivo || '';
+        // Experiência
+        const exps = d.experiencia || [];
+        document.getElementById('tplExp').innerHTML = exps.length
+            ? exps.map(ex => `
+                <div class="cv-exp-item">
+                    <div class="cv-exp-top">
+                        <div>
+                            <div class="cv-exp-co">${esc(ex.empresa)}</div>
+                            <div class="cv-exp-role">${esc(ex.cargo)}</div>
+                        </div>
+                        <div class="cv-exp-period">${esc(ex.periodo)}</div>
+                    </div>
+                    <div class="cv-exp-desc">${formatDesc(ex.descricao)}</div>
+                </div>`).join('')
+            : '<div style="color:#aaa;font-size:8px">—</div>';
+    }
+    /* ═══════════════════════════════════════════
+       BAIXAR PDF — jsPDF texto real (ATS-friendly)
+       Texto selecionável, compatível com Gupy/ATS
+       CORREÇÃO: setTextColor/setFillColor/setDrawColor
+       exigem r,g,b como números separados — nunca array.
+    ═══════════════════════════════════════════ */
+    async function baixarPDF() {
+        if (!cvJsonSalvo) return alert('Gere o currículo primeiro!');
+        setStatus('statusPdf', 'loading', 'Gerando PDF selecionável...', true);
+        try {
+            if (!window.jspdf) {
+                await new Promise((res, rej) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                    s.onload = res; s.onerror = rej;
+                    document.head.appendChild(s);
+                });
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const d   = cvJsonSalvo;
+            const c   = d.contato || {};
+            // ── Dimensões ──
+            const PW = 210, PH = 297;
+            const LW = PW * 0.38;
+            const RX = LW + 1;
+            const RW = PW - RX - 8;
+            const lPad = 5, rPad = 5;
+            const lAvail = LW - lPad * 2;
+            // ── Helpers de cor — sempre r,g,b separados, nunca array ──
+            const tc = (r, g, b) => doc.setTextColor(r, g, b);
+            const fc = (r, g, b) => doc.setFillColor(r, g, b);
+            const dc = (r, g, b) => doc.setDrawColor(r, g, b);
+            // ── Sidebar background ──
+            fc(30, 35, 54);
+            doc.rect(0, 0, LW, PH, 'F');
+            // ── Foto ──
+            let photoY = 14;
+            if (photoDataUrl) {
+                const imgSize = 22;
+                const imgX = (LW - imgSize) / 2;
+                try { doc.addImage(photoDataUrl, 'JPEG', imgX, photoY, imgSize, imgSize); }
+                catch(imgErr) { console.warn('Imagem ignorada:', imgErr); }
+                photoY += imgSize + 4;
+            } else {
+                photoY += 6;
+            }
+            // ── Nome ──
+            tc(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            const nomeLines = doc.splitTextToSize((d.nome || '').toUpperCase(), lAvail);
+            doc.text(nomeLines, LW / 2, photoY, { align: 'center' });
+            photoY += nomeLines.length * 4.5 + 1;
+            // ── Cargo ──
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            tc(107, 127, 191);
+            const cargoLines = doc.splitTextToSize((d.cargo_atual || '').toUpperCase(), lAvail);
+            doc.text(cargoLines, LW / 2, photoY, { align: 'center' });
+            photoY += cargoLines.length * 3.5 + 6;
+            let ly = photoY;
+            // Título de seção lateral
+            function lSectionTitle(title) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6);
+                tc(107, 127, 191);
+                dc(107, 127, 191);
+                doc.text(title.toUpperCase(), lPad, ly);
+                ly += 1;
+                dc(93, 101, 133);
+                doc.setLineWidth(0.2);
+                doc.line(lPad, ly, LW - lPad, ly);
+                ly += 3.5;
+            }
+            // ── Contato ──
+            lSectionTitle('Contato');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6);
+            tc(176, 184, 216);
+            [c.localizacao, c.telefone, c.email, c.linkedin].filter(Boolean).forEach(line => {
+                const wrapped = doc.splitTextToSize(String(line), lAvail);
+                doc.text(wrapped, lPad, ly);
+                ly += wrapped.length * 3.2 + 0.5;
+            });
+            ly += 4;
+            // ── Educação ──
+            lSectionTitle('Educacao');
+            (d.formacao || []).forEach(e => {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6);
+                tc(212, 217, 240);   // ← CORRIGIDO: era setTextColor([212,217,240])
+                const instLines = doc.splitTextToSize(e.instituicao || '', lAvail);
+                doc.text(instLines, lPad, ly); ly += instLines.length * 3 + 0.5;
+                doc.setFont('helvetica', 'normal');
+                tc(176, 184, 216);
+                const crsLines = doc.splitTextToSize(e.curso || '', lAvail);
+                doc.text(crsLines, lPad, ly); ly += crsLines.length * 3 + 0.5;
+                tc(93, 101, 133);
+                doc.setFontSize(5.5);
+                doc.text(e.periodo || '', lPad, ly); ly += 3.5 + 2;
+            });
+            ly += 2;
+            // ── Habilidades (3 blocos) ──
+            lSectionTitle('Habilidades');
+            const sk = (d.habilidades || []).slice(0, 7);
+            const dotSize = 2.2, dotGap = 1.2;
+            const dotsW   = 3 * dotSize + 2 * dotGap;
+            sk.forEach(s => {
+                const lvl  = Math.min(100, Math.max(0, Number(s.nivel) || 50));
+                const dots = nivelParaDots(lvl);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6);
+                tc(176, 184, 216);
+                const nameW = lAvail - dotsW - 2;
+                const nameLines = doc.splitTextToSize(s.nome || '', nameW);
+                doc.text(nameLines, lPad, ly);
+                dots.forEach((cls, i) => {
+                    const bx = LW - lPad - dotsW + i * (dotSize + dotGap);
+                    const by = ly - dotSize + 0.3;
+                    if (cls === 'filled') {
+                        fc(78, 123, 255);
+                    } else if (cls === 'partial') {
+                        fc(45, 53, 88);
+                    } else {
+                        fc(45, 53, 88);
+                    }
+                    doc.roundedRect(bx, by, dotSize, dotSize, 0.4, 0.4, 'F');
+                });
+                ly += nameLines.length * 3 + 1.5;
+            });
+            ly += 2;
+            // ── Idiomas ──
+            lSectionTitle('Idiomas');
+            (d.idiomas || []).forEach(l => {
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6);
+                tc(176, 184, 216);
+                doc.text(l.idioma || '', lPad, ly);
+                tc(93, 101, 133);
+                doc.text(l.nivel || '', LW - lPad, ly, { align: 'right' });
+                ly += 3.5;
+            });
+            // ── Área direita (fundo branco) ──
+            fc(255, 255, 255);
+            doc.rect(LW, 0, PW - LW, PH, 'F');
+            let ry = 14;
+            function rSectionTitle(title) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6.5);
+                tc(78, 123, 255);
+                doc.text(title.toUpperCase(), RX + rPad, ry);
+                ry += 1;
+                dc(78, 123, 255);
+                doc.setLineWidth(0.3);
+                doc.line(RX + rPad, ry, PW - rPad, ry);
+                ry += 4;
+            }
+            // ── Objetivo ──
+            rSectionTitle('Objetivo');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            tc(85, 85, 85);
+            const objLines = doc.splitTextToSize(d.objetivo || '', RW);
+            doc.text(objLines, RX + rPad, ry);
+            ry += objLines.length * 3.5 + 6;
+            // ── Experiência ──
+            rSectionTitle('Experiencia Profissional');
+            (d.experiencia || []).forEach(ex => {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(7);
+                tc(26, 26, 46);
+                const coW = RW * 0.65;
+                const coLines = doc.splitTextToSize(ex.empresa || '', coW);
+                doc.text(coLines, RX + rPad, ry);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(5.5);
+                tc(144, 153, 184);
+                doc.text(ex.periodo || '', PW - rPad, ry, { align: 'right' });
+                ry += coLines.length * 3.3 + 0.5;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6);
+                tc(78, 123, 255);
+                doc.text(ex.cargo || '', RX + rPad, ry);
+                ry += 3.5;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6);
+                tc(85, 85, 85);
+                const desc = String(ex.descricao || '').replace(/^[-*•]\s*/gm, '• ');
+                const descLines = doc.splitTextToSize(desc, RW);
+                descLines.forEach(line => {
+                    if (ry > PH - 12) { doc.addPage(); fc(255,255,255); doc.rect(0,0,PW,PH,'F'); ry = 14; }
+                    doc.text(line, RX + rPad, ry);
+                    ry += 3.3;
+                });
+                ry += 4;
+            });
+            doc.save('curriculo_awadev.pdf');
+            setStatus('statusPdf', 'ok', '✅ PDF selecionável gerado!');
+            setTimeout(() => setStatus('statusPdf', '', ''), 5000);
+        } catch (e) {
+            console.error(e);
+            setStatus('statusPdf', 'err', '❌ Erro ao gerar PDF: ' + e.message);
+        }
+    }
+    /* ═══════════════════════════════════════════
+       REINICIAR
+    ═══════════════════════════════════════════ */
+    function reiniciar() {
+        document.getElementById('descVaga').value = '';
+        document.getElementById('vagaUrl').value  = '';
+        setStatus('statusVaga', '', '');
+        setStep(1);
+    }
+    /* ═══════════════════════════════════════════
+       DRAG & DROP
+    ═══════════════════════════════════════════ */
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            const dt = new DataTransfer();
+            dt.items.add(files[0]);
+            document.getElementById('cvInput').files = dt.files;
+            onFileSelected(document.getElementById('cvInput'));
+        }
+    });
+</script>
+</body>
+</html>
